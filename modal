@@ -1,0 +1,226 @@
+import {useEffect, useState} from 'react'
+import {Button, Select, Text} from "../../../components/utils/field";
+import {Form, Input, message, Spin} from "antd";
+import '../../../styles/modal-style.css'
+import {GetBaseDropDown} from "../../../services/getList";
+import axios from "../../../services/Axios";
+import {CreatDropDown} from "../../../services/DropDownServices";
+
+
+function AddReason({closeModal,getReason}) {
+    const [loading,setLoading]=useState(false)
+    const [specialityId,setSpecialityId] = useState();
+    const [error,setError] = useState(false);
+    const [text,setText] = useState('');
+    const [reason,setReason]=useState([])
+    const [specialityOption,setSpecialityOption]=useState([])
+
+    const [newDropDown,setNewDropDown]=useState('')
+    const [loadingAddDropDown,setLoadingAddDropDown]=useState(false)
+
+    const [form] = Form.useForm();
+
+    const dataSpeciality = async () => {
+        setLoadingAddDropDown(true)
+        const result = await GetBaseDropDown(2);
+        const convert = result?.data?.data?.map((p) => ({
+            value: p.Id,
+            label: p.Name,
+        }));
+        setSpecialityOption(convert)
+        setLoadingAddDropDown(false)
+    };
+
+    useEffect(()=>{
+        dataSpeciality()
+    },[])
+
+    const addItem = () => {
+        setLoading(true)
+        if(specialityId&& reason.length){
+            for (var i = 0; i < reason.length; i++) {
+                axios.post('DropDown/CreateBaseDropDown',{
+                    Name: reason[i],
+                    DropDownTypeId: 8,
+                    ParentId: parseInt(specialityId, 10),
+                })
+                    .then()
+                    .catch(err=> {
+                        if(err)setError(true)
+                        message.error(err?.response?.data?.message)
+                    })
+
+            }
+            setLoading(true)
+            if(!error){
+                message.success('عملیات با موفقیت انجام شد.')
+                getReason()
+                closeModal()
+            }
+
+        }else if(!specialityId&&reason.length){
+            message.error('تخصص انتخاب نشده است.')
+            setLoading(false)
+        }else if(!reason.length&&specialityId){
+            message.error('علت مراجعه اضافه نشده است.')
+            setLoading(false)
+        }else{
+            message.error('فیلدهای موردنظر را پر کنید.')
+            setLoading(false)
+        }
+
+
+    };
+
+     const removeReason = (i) => {
+        setReason(reason.filter(item => item !== reason[i]))
+    };
+
+    const addReason = (text) => {
+        if(text!==''){
+            setReason([...reason,text])
+            setText('')
+        }
+    };
+
+    async function addNewSpeciality() {
+        setLoadingAddDropDown(true)
+        const {result,error}=await CreatDropDown(2,newDropDown,1)
+        let newId
+        if (!error&&Object.keys(result).length){
+            newId=result?.data?.data?.Id
+            dataSpeciality()
+            form.setFieldsValue({
+                newItem:'',
+                'speciality-modal':newId
+            })
+        }
+        setLoadingAddDropDown(false)
+    }
+
+    return(
+        <div className='my-modal'>
+            <div className='close-div' onClick={closeModal}></div>
+            <div className='content d-flex flex-column'>
+                <div className='close-btn' onClick={closeModal}>
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <g clipPath="url(#clip0)">
+                            <path d="M0.2625 0H0.595C2.77375 2.06618 4.85333 4.23704 7 6.33811C9.14229 4.23559 11.2292 2.07635 13.3962 0H13.7492C13.7258 0.189024 13.809 0.276266 14 0.261725V0.594698C11.9262 2.76411 9.75042 4.83901 7.64312 6.97934C9.75187 9.11531 11.9175 11.196 14 13.3567V13.7086C13.809 13.6853 13.7229 13.7682 13.7375 13.9587H13.405C11.2262 11.891 9.14667 9.72164 7 7.62057C4.85771 9.72309 2.77083 11.8823 0.605208 13.9587H0.250833C0.274167 13.7682 0.189583 13.6824 0 13.697V13.3654C2.07229 11.1931 4.24958 9.11967 6.35687 6.97934C4.24813 4.84337 2.0825 2.76266 0 0.601968V0.250093C0.189583 0.273357 0.277083 0.189024 0.2625 0Z" fill="#0082BE"/>
+                        </g>
+                        <defs>
+                            <clipPath id="clip0">
+                                <rect width="14" height="13.9587" fill="white"/>
+                            </clipPath>
+                        </defs>
+                    </svg>
+                </div>
+                <Form
+                    name="addReason"
+                    form={form}
+                    className='modal-form d-flex flex-column justify-content-between flex-grow-1'
+                >
+                    <div>
+                        <h2 className='title'>افزودن علت مراجعه جدید</h2>
+                        <Select
+                            label="انتخاب تخصص"
+                            name="speciality-modal"
+                            required={false}
+                            showSearch
+                            onChange={(value) => {
+                                setSpecialityId(value)
+                            }}
+                            placeholder="انتخاب تخصص"
+                            optionFilterProp="children"
+                            filterOption={(input, option) =>
+                                option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                            }
+                            options={specialityOption}
+                            dropdownRender={menu => (
+                                <div className='add-type-box'>
+                                    {loadingAddDropDown&&<div style={{position:"absolute",inset:'0',background:'rgba(255,255,255,.6)',
+                                        display:"flex",alignItems:"center",justifyContent:"center",zIndex:'3'}}><Spin /></div>}
+                                    <div style={{display: 'flex', flexWrap: 'nowrap', padding: '8px 4px'}}>
+                                        <Text
+                                            name='newItem'
+                                            style={{flex: 'auto'}}
+                                            placeholder={'مورد جدید'}
+                                            className='abs-label'
+                                            onBlur={e=>setNewDropDown(e.target.value)}
+                                        />
+                                        <button type="button"
+                                                style={{flex: 'none', padding: '8px', display: 'block', cursor: 'pointer'}}
+                                                onClick={()=>addNewSpeciality()}>+</button>
+                                    </div>
+                                    {menu}
+                                </div>
+                            )}
+                        />
+
+                        <h3 className='small-title'>علت‌های مراجعه</h3>
+
+                        <div className='d-flex flex-child-100'>
+                            <Input
+                                label="علت مراجعه"
+                                className='reason-modal'
+                                name="reason-modal"
+                                value={text}
+                                onChange={(e)=>setText(e.target.value)}
+                                onPressEnter={()=>addReason(text)}
+                            />
+                            <Button
+                                label={
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M8.5 16.5858L4.70711 12.7929C4.31658 12.4024 3.68342 12.4024 3.29289 12.7929C2.90237 13.1834 2.90237 13.8166 3.29289 14.2071L7.79289 18.7071C8.18342 19.0976 8.81658 19.0976 9.20711 18.7071L20.2071 7.70711C20.5976 7.31658 20.5976 6.68342 20.2071 6.29289C19.8166 5.90237 19.1834 5.90237 18.7929 6.29289L8.5 16.5858Z" fill="white"/>
+                                    </svg>
+                                }
+                                onClick={(e)=>addReason(text)}
+                                className='btn-search none-flex'
+                                type="primary"
+                                htmlType="button"
+                            />
+                        </div>
+
+                        <div className='reason-block'>
+                            {reason?.map((item,i)=>(
+                                <div key={i} className='col'>
+                                    <div className='item'>
+                                        <span className='text'>{item}</span>
+                                        <span className='action-btn remove-btn' onClick={()=>removeReason(i)}>
+                                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                <path d="M5.20644 1.21999C5.46311 0.774987 5.96644 0.489987 6.48144 0.504987C7.48977 0.49332 8.49977 0.496654 9.50811 0.501654C10.1514 0.47332 10.7648 0.931654 10.9398 1.54665C11.0098 1.85999 10.9981 2.18165 11.0114 2.49999C12.3448 2.50665 13.6764 2.48832 15.0081 2.50499C15.4948 2.46332 15.6998 3.18665 15.2814 3.42332C14.8714 3.58499 14.3998 3.47165 13.9664 3.49999C13.6564 7.04999 13.3814 10.605 13.0681 14.155C13.0248 14.935 12.2848 15.5533 11.5148 15.5C9.17311 15.5 6.83144 15.5 4.48977 15.5C3.71977 15.555 2.97977 14.94 2.93311 14.1617C2.61811 10.61 2.34477 7.05332 2.03311 3.49999C1.59977 3.47332 1.13311 3.58165 0.72144 3.42499C0.299774 3.19332 0.50144 2.46665 0.988107 2.50499C2.31977 2.48832 3.65477 2.50665 4.98811 2.49999C5.01311 2.06999 4.95644 1.59832 5.20644 1.21999ZM6.33977 1.52665C5.94144 1.68665 6.00144 2.15165 5.98477 2.49999C7.32811 2.49999 8.67144 2.49999 10.0148 2.49999C9.99644 2.15165 10.0598 1.68165 9.65477 1.52665C8.55311 1.47999 7.44144 1.47999 6.33977 1.52665ZM3.04144 3.49999C3.33811 6.95165 3.61811 10.405 3.90811 13.8567C3.88644 14.1967 4.12811 14.5417 4.49811 14.495C6.83477 14.5033 9.17311 14.5033 11.5098 14.495C11.8764 14.5383 12.1114 14.1917 12.0914 13.8567C12.3814 10.4033 12.6614 6.95165 12.9581 3.49999C9.65311 3.49999 6.34644 3.49999 3.04144 3.49999Z" fill="#ED4C67"/>
+                                                <path d="M6.2213 6.07504C6.51796 5.83837 7.02463 6.10004 6.99463 6.48337C6.99463 8.20837 7.02296 9.93837 6.97963 11.6634C6.8413 12.19 5.96796 12.07 6.00463 11.5167C5.9863 9.95671 6.0113 8.39671 5.99463 6.83671C6.00296 6.57171 5.95296 6.23504 6.2213 6.07504Z" fill="#ED4C67"/>
+                                                <path d="M9.21648 6.07817C9.50981 5.8365 10.0198 6.0965 9.99481 6.4765C10.0048 8.15984 10.0048 9.84317 9.99481 11.5265C10.0215 12.0748 9.14981 12.1865 9.01981 11.6598C8.96648 10.1032 9.02148 8.54484 8.99481 6.98817C9.01981 6.68317 8.90814 6.27484 9.21648 6.07817Z" fill="#ED4C67"/>
+                                            </svg>
+                                        </span>
+                                    </div>
+                                </div>
+                                )
+                            )}
+                        </div>
+                    </div>
+
+                    <div className='d-flex justify-content-between'>
+                        <Button
+                            label={'انصراف'}
+                            className='border-btn m-0 w-90'
+                            type="primary"
+                            htmlType="button"
+                            onClick={closeModal}
+                        />
+                        <Button
+                            label={'ذخیره و ثبت اطلاعات'}
+                            className='green-btn m-0 w-90'
+                            type="primary"
+                            htmlType="button"
+                            onClick={()=>addItem()}
+                            loading={loading}
+                            disabled={loading}
+                        />
+                    </div>
+                </Form>
+            </div>
+        </div>
+    )
+}
+
+export default AddReason

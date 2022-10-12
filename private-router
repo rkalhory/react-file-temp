@@ -1,0 +1,7 @@
+import {Redirect,Route} from 'react-router-dom'
+
+function PrivateRoute({authenticate,...other}) {
+    return authenticate ? <Route {...other} />: <Redirect to='/' />
+}
+
+export default PrivateRoute

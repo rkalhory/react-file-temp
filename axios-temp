@@ -1,0 +1,22 @@
+import Axios from 'axios';
+import cookie from 'js-cookie'
+import { apiUrl } from "./address.json";
+
+const axios = Axios.create();
+
+axios.defaults.headers.common['Content-Type'] = 'application/json';
+axios.defaults.headers.common['Accept-Language']='fa-IR';
+axios.defaults.baseURL = apiUrl;
+
+const setAuth = () => {
+    const token = cookie.get('token');
+    if (token) {
+        axios.defaults.headers.common.Authorization = `Bearer ${token}`;
+        return true
+    }else {
+        return false
+    }
+};
+
+export default axios;
+export { setAuth };

@@ -1,0 +1,24 @@
+function vmsNationalCode(val) {
+    if (isNaN(val)) {
+        return false
+    } else if (val === "") {
+        return false
+    } else if (val.length < 10) {
+        return false
+    } else {
+        var yy = 0;
+        var yv = parseInt(yv);
+        for (let i = 0; i < val.length; i++) {
+            yv = val[i] * (val.length - i);
+            yy += yv;
+        }
+        var x = yy % 11;
+        if (x === 0) {
+            return true
+        } else {
+            return false
+        }
+    }
+}
+
+export {vmsNationalCode}

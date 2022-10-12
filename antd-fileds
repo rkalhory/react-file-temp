@@ -1,0 +1,324 @@
+import {
+    Form,
+    Input,
+    Select as AntSelect,
+    Button as AntButton,
+    InputNumber as AntInputNumber,
+    TimePicker as AntTimePicker,
+    Radio as AntRadio,
+    Checkbox as AntCheckbox,
+    Switch  as AntSwitch,
+    TreeSelect as AntTreeSelect
+} from "antd";
+import { DatePicker as DatePickerJalali } from "antd-jalali";
+import './style.css'
+
+const { TextArea: AntTextArea } = Input;
+
+export const Text=({label,name,required,className,notLabel,errText,...other})=>{
+    return(
+        required?
+            <Form.Item
+                name={name}
+                label={!notLabel?label:''}
+                className={className}
+                rules ={[
+                    {
+                        required: {required},
+                        // message: `این فیلد اجباری است!`,
+                        message: `${errText || label} اجباری است!`,
+                    }
+                ]}
+            >
+                <Input className={className} placeholder={notLabel?label:''} {...other}/>
+            </Form.Item>:
+            <Form.Item name={name} label={!notLabel?label:''}  className={className}>
+                <Input placeholder={label} className={className} {...other}/>
+            </Form.Item>
+    )
+}
+export const Select=({label,name,required,options,setLabel,...other})=>{
+    return(
+        required?
+            <Form.Item
+                name={name}
+                label={setLabel?label:''}
+                className='required'
+                rules={[
+                    {
+                        required: {required},
+                        message: `${label} اجباری است!`,
+                    },
+                ]}
+            >
+                <AntSelect {...other}>
+                    {options?.map(item => (
+                            <AntSelect.Option key={item?.label} value={item?.value}>{item?.label}</AntSelect.Option>
+                        )
+                    )}
+                </AntSelect>
+            </Form.Item>
+            :
+            <Form.Item name={name} label={setLabel?label:''}>
+                <AntSelect {...other}>
+                    {options?.map(item => (
+                            <AntSelect.Option key={item?.label} value={item?.value}>{item?.label}</AntSelect.Option>
+                        )
+                    )}
+                </AntSelect>
+            </Form.Item>
+    )
+}
+
+export const TreeSelect=({label,name,required,treeData,setLabel,...other})=>{
+    return(
+        required?
+            <Form.Item
+                name={name}
+                label={setLabel?label:''}
+                className='required'
+                rules={[
+                    {
+                        required: {required},
+                        message: `${label} اجباری است!`,
+                    },
+                ]}
+            >
+                <AntTreeSelect treeData={treeData}  placeholder={label} {...other}/>
+            </Form.Item>
+            :
+            <Form.Item name={name} label={setLabel?label:''}>
+                <AntTreeSelect treeData={treeData}  placeholder={label} {...other}/>
+            </Form.Item>
+    )
+}
+
+export const Button=({label,className,...other})=>{
+    return(
+        <Form.Item className={className}>
+            <AntButton className={className} {...other}>
+                {label}
+            </AntButton>
+        </Form.Item>
+    )
+}
+
+export const InputNumber=({label,name,required,className,errText,...other})=>{
+    return(
+        required?
+            <Form.Item
+                name={name}
+                className={className}
+                rules = {
+                    [
+                        {
+                            required: {required},
+                            message: `${errText} اجباری است!`,
+                        }
+                    ]}
+            >
+                <AntInputNumber placeholder={label} {...other}/>
+            </Form.Item>:
+            <Form.Item name={name}  className={className}>
+                <AntInputNumber placeholder={label} {...other}/>
+            </Form.Item>
+    )
+}
+
+export const TextArea=({label,name,required,className,setLabel,...other})=>{
+    return(
+        required?
+            <Form.Item
+                name={name}
+                className={className}
+                label={setLabel?label:''}
+                rules = {
+                    [
+                        {
+                            required: {required},
+                            message: `${label} اجباری است!`,
+                        }
+                    ]}
+            >
+                <AntTextArea placeholder={!setLabel?label:''} className={className} {...other}/>
+            </Form.Item>:
+            <Form.Item name={name} label={setLabel?label:''} className={className}>
+                <AntTextArea placeholder={label} className={className} {...other}/>
+            </Form.Item>
+    )
+}
+
+export const DatePicker=({name,label,required,className,placeholder,notLabel,...other})=>{
+    return(
+        required?
+            <Form.Item
+                name={name}
+                label={!notLabel?label:''}
+                className={className}
+                rules = {
+                    [
+                        {
+                            required: {required},
+                            message: `${label||placeholder} اجباری است!`,
+                        }
+                    ]}
+            >
+                <DatePickerJalali
+                    placeholder={placeholder}
+                    suffixIcon={
+                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M11.5 0C12.8255 0 13.91 1.03154 13.9947 2.33562L14 2.5V11.5C14 12.8255 12.9685 13.91 11.6644 13.9947L11.5 14H2.5C1.17452 14 0.0899613 12.9685 0.00531769 11.6644L0 11.5V2.5C0 1.17452 1.03154 0.0899613 2.33562 0.00531769L2.5 0H11.5ZM13 4H1V11.5C1 12.2797 1.59489 12.9204 2.35554 12.9931L2.5 13H11.5C12.2797 13 12.9204 12.4051 12.9931 11.6445L13 11.5V4ZM11.5 1H2.5C1.7203 1 1.07955 1.59489 1.00687 2.35554L1 2.5V3H13V2.5C13 1.7203 12.4051 1.07955 11.6445 1.00687L11.5 1Z" fill="#0078D4"/>
+                        </svg>
+                    }
+                    format={'YYYY/MM/DD'}
+                    {...other}
+                />
+            </Form.Item>
+            :
+            <Form.Item name={name} label={!notLabel?label:''}  className={className}>
+                <DatePickerJalali
+                    placeholder={placeholder}
+                    suffixIcon={
+                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M11.5 0C12.8255 0 13.91 1.03154 13.9947 2.33562L14 2.5V11.5C14 12.8255 12.9685 13.91 11.6644 13.9947L11.5 14H2.5C1.17452 14 0.0899613 12.9685 0.00531769 11.6644L0 11.5V2.5C0 1.17452 1.03154 0.0899613 2.33562 0.00531769L2.5 0H11.5ZM13 4H1V11.5C1 12.2797 1.59489 12.9204 2.35554 12.9931L2.5 13H11.5C12.2797 13 12.9204 12.4051 12.9931 11.6445L13 11.5V4ZM11.5 1H2.5C1.7203 1 1.07955 1.59489 1.00687 2.35554L1 2.5V3H13V2.5C13 1.7203 12.4051 1.07955 11.6445 1.00687L11.5 1Z" fill="#0078D4"/>
+                        </svg>
+                    }
+                    format={'YYYY/MM/DD'}
+                    {...other}
+                />
+            </Form.Item>
+    )
+}
+
+export const TimePicker=({label,name,required,className,placeholder,allowClear,notLabel,...other})=>{
+    return(
+        required?
+            <Form.Item
+                name={name}
+                label={!notLabel?label:''}
+                className={className}
+                rules = {
+                    [
+                        {
+                            required: {required},
+                            message: `${label||placeholder} اجباری است!`,
+                        }
+                    ]}
+            >
+                <AntTimePicker
+                    placeholder={placeholder}
+                    allowClear={allowClear}
+                    suffixIcon={
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M8 0C12.4183 0 16 3.58172 16 8C16 12.4183 12.4183 16 8 16C3.58172 16 0 12.4183 0 8C0 3.58172 3.58172 0 8 0ZM8 1C4.13401 1 1 4.13401 1 8C1 11.866 4.13401 15 8 15C11.866 15 15 11.866 15 8C15 4.13401 11.866 1 8 1ZM7.5 3C7.74546 3 7.94961 3.17688 7.99194 3.41012L8 3.5V8H10.5C10.7761 8 11 8.22386 11 8.5C11 8.74546 10.8231 8.94961 10.5899 8.99194L10.5 9H7.5C7.25454 9 7.05039 8.82312 7.00806 8.58988L7 8.5V3.5C7 3.22386 7.22386 3 7.5 3Z" fill="#0078D4"/>
+                        </svg>
+                    }
+                    format='HH:mm'
+                    {...other}
+                />
+            </Form.Item>
+            :
+            <Form.Item name={name}  className={className}>
+                <AntTimePicker
+                    placeholder={placeholder}
+                    allowClear={allowClear}
+                    suffixIcon={
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M8 0C12.4183 0 16 3.58172 16 8C16 12.4183 12.4183 16 8 16C3.58172 16 0 12.4183 0 8C0 3.58172 3.58172 0 8 0ZM8 1C4.13401 1 1 4.13401 1 8C1 11.866 4.13401 15 8 15C11.866 15 15 11.866 15 8C15 4.13401 11.866 1 8 1ZM7.5 3C7.74546 3 7.94961 3.17688 7.99194 3.41012L8 3.5V8H10.5C10.7761 8 11 8.22386 11 8.5C11 8.74546 10.8231 8.94961 10.5899 8.99194L10.5 9H7.5C7.25454 9 7.05039 8.82312 7.00806 8.58988L7 8.5V3.5C7 3.22386 7.22386 3 7.5 3Z" fill="#0078D4"/>
+                        </svg>
+                    }
+                    format='HH:mm'
+                    {...other}
+                />
+            </Form.Item>
+    )
+}
+export const Switch=({name,required,className,defaultChecked ,...other})=>{
+    return(
+        required?
+            <Form.Item
+                valuePropName="checked"
+                name={name}
+                className={className}
+                rules = {
+                    [
+                        {
+                            required: {required},
+                            message: `این فیلد اجباری است!`,
+                        }
+                    ]}
+            >
+                <AntSwitch
+                    defaultChecked ={defaultChecked }
+                    {...other}
+                />
+            </Form.Item>
+            :
+            <Form.Item name={name}  className={className} valuePropName="checked">
+                <AntSwitch
+                    defaultChecked ={defaultChecked }
+                    {...other}
+                />
+            </Form.Item>
+    )
+}
+
+export const RadioGroup=({label,name,required,className,languageDependent,...other})=>{
+    return(
+        required?
+            <Form.Item
+                name={name}
+                label={label}
+                className={className}
+                rules={[
+                    {
+                        required: {required},
+                        message: `${label} اجباری است!`,
+                    },
+                ]}
+            >
+                <AntRadio.Group className={className} {...other} />
+                {languageDependent&&<div className='choose-lang-text'>
+                    <svg width="22" height="22" viewBox="0 0 17 17" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M6.23836 3.71449L6.27979 3.80319L11.0079 16.1301C11.1337 16.458 10.9749 16.8278 10.6531 16.9561C10.3582 17.0736 10.0288 16.9473 9.879 16.6729L9.84278 16.5944L8.62418 13.4174L2.59782 13.4176L2.51784 13.4124L1.20251 16.6088C1.06891 16.9335 0.702343 17.0864 0.383764 16.9502C0.0917324 16.8254 -0.0586057 16.501 0.0212744 16.1977L0.0488342 16.1156L5.12038 3.78878C5.32494 3.29158 5.99019 3.27046 6.23836 3.71449ZM14.2363 0C14.5592 0 14.826 0.239867 14.8682 0.551079L14.8741 0.637597L14.8738 4.67231L16.3622 4.67296C16.6851 4.67296 16.9519 4.91283 16.9942 5.22404L17 5.31056C17 5.63335 16.7601 5.90011 16.4488 5.94233L16.3622 5.94815L14.8738 5.9475L14.8741 12.1116C14.8741 12.4344 14.6341 12.7011 14.3228 12.7434L14.2363 12.7492C13.9134 12.7492 13.6466 12.5093 13.6043 12.1981L13.5985 12.1116V0.637597C13.5985 0.285462 13.884 0 14.2363 0ZM5.78823 5.7334L3.09922 12.1422H8.29498L5.78823 5.7334ZM7.43508 0H12.1102C12.4331 0 12.7 0.239867 12.7422 0.551079L12.748 0.637597V3.19113C12.748 5.18433 11.1317 6.80013 9.13798 6.80013C8.78574 6.80013 8.5002 6.51467 8.5002 6.16254C8.5002 5.8104 8.78574 5.52494 9.13798 5.52494C10.3795 5.52494 11.3947 4.55602 11.4682 3.3333L11.4725 3.19113V1.27519H7.43508C7.08285 1.27519 6.79731 0.989731 6.79731 0.637597C6.79731 0.314806 7.03724 0.04804 7.34854 0.00582055L7.43508 0H12.1102H7.43508Z" fill="#999"/>
+                    </svg>
+                    زبان را انتخاب کنید
+                </div>}
+
+            </Form.Item>
+            :
+            <Form.Item name={name} label={label} className={className} >
+                <AntRadio.Group className={className} {...other} />
+                {languageDependent&&<div className='choose-lang-text'>
+                    <svg width="22" height="22" viewBox="0 0 17 17" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M6.23836 3.71449L6.27979 3.80319L11.0079 16.1301C11.1337 16.458 10.9749 16.8278 10.6531 16.9561C10.3582 17.0736 10.0288 16.9473 9.879 16.6729L9.84278 16.5944L8.62418 13.4174L2.59782 13.4176L2.51784 13.4124L1.20251 16.6088C1.06891 16.9335 0.702343 17.0864 0.383764 16.9502C0.0917324 16.8254 -0.0586057 16.501 0.0212744 16.1977L0.0488342 16.1156L5.12038 3.78878C5.32494 3.29158 5.99019 3.27046 6.23836 3.71449ZM14.2363 0C14.5592 0 14.826 0.239867 14.8682 0.551079L14.8741 0.637597L14.8738 4.67231L16.3622 4.67296C16.6851 4.67296 16.9519 4.91283 16.9942 5.22404L17 5.31056C17 5.63335 16.7601 5.90011 16.4488 5.94233L16.3622 5.94815L14.8738 5.9475L14.8741 12.1116C14.8741 12.4344 14.6341 12.7011 14.3228 12.7434L14.2363 12.7492C13.9134 12.7492 13.6466 12.5093 13.6043 12.1981L13.5985 12.1116V0.637597C13.5985 0.285462 13.884 0 14.2363 0ZM5.78823 5.7334L3.09922 12.1422H8.29498L5.78823 5.7334ZM7.43508 0H12.1102C12.4331 0 12.7 0.239867 12.7422 0.551079L12.748 0.637597V3.19113C12.748 5.18433 11.1317 6.80013 9.13798 6.80013C8.78574 6.80013 8.5002 6.51467 8.5002 6.16254C8.5002 5.8104 8.78574 5.52494 9.13798 5.52494C10.3795 5.52494 11.3947 4.55602 11.4682 3.3333L11.4725 3.19113V1.27519H7.43508C7.08285 1.27519 6.79731 0.989731 6.79731 0.637597C6.79731 0.314806 7.03724 0.04804 7.34854 0.00582055L7.43508 0H12.1102H7.43508Z" fill="#999"/>
+                    </svg>
+                    زبان را انتخاب کنید
+                </div>}
+            </Form.Item>
+    )
+}
+
+export const Checkbox=({label,name,required,className,notLabel,...other})=>{
+    return(
+        required?
+            <Form.Item
+                name={name}
+                className={className}
+                valuePropName="checked"
+                rules = {
+                    [
+                        {
+                            required: {required},
+                            message: `${label} اجباری است!`,
+                        }
+                    ]}
+            >
+                <AntCheckbox className={className} {...other}>{label}</AntCheckbox>
+            </Form.Item>:
+            <Form.Item name={name} valuePropName="checked">
+                <AntCheckbox className={className} {...other}>{label}</AntCheckbox>
+            </Form.Item>
+    )
+}
+

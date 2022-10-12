@@ -1,0 +1,180 @@
+import {useEffect, useState,useRef} from "react";
+import { Spin ,message} from 'antd';
+import { LoadingOutlined } from '@ant-design/icons';
+import cookie from "js-cookie";
+import { apiUrl } from "../../../services/address.json";
+import './style.css'
+import {detectIcon} from "../utilFunctions";
+import axios from "../../../services/Axios";
+
+
+const antIcon = <LoadingOutlined style={{ fontSize: 26 }} spin />;
+
+function FileUpload({accept,title,handleUpload,uploadList,action}){
+
+    const [list,setList]=useState([])
+    const [listId,setListId]=useState([])
+    const [deleteListId,setDeleteListId]=useState([])
+    const [loading,setLoading]=useState(false)
+
+    const token = cookie.get('token');
+
+    const inputFile=useRef()
+
+
+    useEffect(()=>{
+        let fileId=uploadList?.map((item)=>item?.id)
+        if(!deleteListId.length&&!list.length&&uploadList?.length) setList(uploadList)
+        if (!deleteListId.length&&!listId.length&&uploadList?.length) setListId(fileId)
+    },[uploadList])
+
+    function readImage(file) {
+        if (file){
+            setLoading(true)
+            var axios = require('axios');
+            const name=file.name.split(".")
+            let fileType
+            if(name[1]==='rar'){
+                fileType='application/vnd.rar'
+            }else{
+                fileType=file.type
+            }
+            var config = {
+                method: 'post',
+                url: apiUrl+'file/Upload',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': fileType,
+                    'Accept-Language':'fa-IR'
+                },
+                data : file
+            };
+
+            axios(config)
+                .then(res=> {
+                    let item=res?.data?.data?.data
+                    list.push({
+                        name: `${item?.Title}${item?.Format}`,
+                        format: item?.Format,
+                        id: item?.Id,
+                        hashId: item?.HashId,
+                        url: item?.Url,
+                    })
+                    setListId([...listId,item?.Id])
+
+                })
+                .catch(function (error) {
+                    message.error('مشکلی وجود دارد! دوباره تلاش کنید.')
+                })
+                .finally(()=> {
+                    setLoading(false)
+                })
+        }
+    }
+
+    function deleteApi(id,hashId) {
+        let isErr=false
+        axios.post('File/Delete',{
+            id:parseInt(id,10)||'',
+            hashId:hashId||''
+        })
+            .then()
+            .catch(err=> {
+                if(err){
+                    isErr=true
+                }
+            })
+            .finally(()=>{
+                if(!isErr){
+                    setListId(listId.filter(item => item !== id))
+                    setList(list.filter(item => item.id !== id))
+                    message.success('عملیات با موفقیت انجام شد.')
+                }else{
+                    message.error('مشکلی در حذف فایل وجود دارد.')
+                }
+            })
+    }
+
+    function deleteFile(id,hashId){
+        inputFile.current.value=''
+        if(action==='add'){
+            deleteApi(id,hashId)
+        }else if(action==='edit'){
+            if(uploadList.some(item => item.id === id)){
+                setListId(listId.filter(item => item !== id))
+                setList(list.filter(item => item.id !== id))
+                setDeleteListId([...deleteListId, {
+                    Id:id,
+                    HashId:hashId
+                }])
+            }else{
+                deleteApi(id,hashId)
+            }
+        }
+    }
+
+    useEffect(()=>{
+        if(action==='add'){
+            handleUpload(listId);
+        }else if(action==='edit'){
+            handleUpload(listId,deleteListId);
+        }
+
+    },[listId,deleteListId])
+
+
+
+
+
+    return(
+        <div className='d-flex'>
+            <div className="file-uploader d-flex align-items-center justify-content-center">
+                <label
+                    className={`ant-upload d-flex align-items-center justify-content-center ${loading?'disable':''}`}
+                >
+                    <input
+                        type="file"
+                        ref={inputFile}
+                        accept={accept}
+                        onChange={(e) => readImage(e.target.files[0])}
+                        style={{ display: "none" }}
+                    />
+                    <div>
+                        <svg width="26" height="35" viewBox="0 0 26 35" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M24.6548 2.63174C25.3975 2.63195 26 2.04446 26 1.31954C26 0.594628 25.3983 0.00679634 24.6556 0.00658604L1.34522 5.64408e-08C0.602489 -0.000210241 0 0.587281 0 1.3122C0 2.03711 0.601711 2.62494 1.34444 2.62516L24.6548 2.63174ZM12.8175 34.988L13 35C13.6808 35 14.2435 34.5062 14.3326 33.8655L14.3448 33.6874L14.343 9.73726L21.0166 16.2482C21.4941 16.7142 22.2413 16.7565 22.7677 16.3751L22.9185 16.248C23.3959 15.782 23.4392 15.0528 23.0485 14.539L22.9183 14.3918L13.957 5.64717C13.4798 5.18149 12.7332 5.13895 12.2067 5.51971L12.0559 5.64663L3.0842 14.3912C2.55865 14.9035 2.55807 15.7345 3.0829 16.2475C3.56001 16.7138 4.3071 16.7567 4.83385 16.3757L4.98477 16.2488L11.6534 9.74951L11.6552 33.6874C11.6552 34.3519 12.1611 34.9011 12.8175 34.988Z" fill="#0078D4"/>
+                        </svg>
+                        <div>{title}</div>
+                    </div>
+
+                </label>
+            </div>
+            <div className='upload-files'>
+                {list?.map((item,index)=>(
+                    <div className='ant-upload-list-picture-card-container rtl-mg' key={index}>
+                        <div className='item'>
+                            <button title="حذف فایل" type="button" className="remove-actions-btn" onClick={()=>deleteFile(item?.id,item?.hashId)}>
+                            </button>
+                            {item.format.replace('.', '')==='png'||item.format.replace('.', '')==='jpg'||item.format.replace('.', '')==='jpeg'||item.format.replace('.', '')==='gif'||item.format.replace('.', '')==='bmp'?
+                                <img src={item?.url} alt='pic'/>:
+                                <div className='info'>
+                                    {detectIcon(item?.format)}
+                                    <br/>
+                                    {item?.name}
+                                </div> }
+                        </div>
+                    </div>
+                ))}
+                {loading&&
+                <div className='ant-upload-list-picture-card-container rtl-mg'>
+                    <div className='item'>
+                        <Spin indicator={antIcon} className='loadImg'/>
+                    </div>
+                </div>
+                }
+            </div>
+        </div>
+    )
+}
+
+
+export default FileUpload

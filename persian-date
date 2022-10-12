@@ -1,0 +1,57 @@
+import moment from "jalali-moment";
+
+
+function makeDateTime(f){
+    let newDate = new Date(f)
+    let date = `${newDate.getFullYear()}/${newDate.getMonth() + 1}/${newDate.getDate()}`;
+    let faDate=moment(date, 'YYYY/MM/DD').locale('fa').format('YYYY/MM/DD')
+    let time= `${("0" + newDate.getHours()).slice(-2)}:${("0" + newDate.getMinutes()).slice(-2)}`
+    let finallTime= time+'\xa0\xa0\xa0\xa0\xa0\xa0'+faDate
+    return finallTime
+}
+
+function makeDate(f){
+    let newDate = new Date(f)
+    let date = `${newDate.getFullYear()}/${newDate.getMonth() + 1}/${newDate.getDate()}`;
+    let faDate=moment(date, 'YYYY/MM/DD').locale('fa').format('YYYY/MM/DD')
+    return faDate
+}
+
+function makeTime(f){
+    let newDate = new Date(f)
+    let time= `${("0" + newDate.getHours()).slice(-2)}:${("0" + newDate.getMinutes()).slice(-2)}`
+    return time
+}
+
+function makeDateDash(f){
+    let newDate = new Date(f)
+    let date = `${newDate.getFullYear()}-${newDate.getMonth() + 1}-${newDate.getDate()}`;
+    return date
+}
+
+function isKabise(y) {
+    let list2 = [1, 5, 9, 13, 17, 22, 26, 30];
+    let a = y % 33;
+    return list2.includes(a)
+}
+
+function jalaliMonth(f){
+    let newDate = new Date(f)
+    let date = `${newDate.getFullYear()}/${newDate.getMonth() + 1}/${newDate.getDate()}`;
+    let faDate=moment(date, 'YYYY/MM/DD').locale('fa').format('MM')
+    return faDate
+}
+
+function jalaliYear(f){
+    let newDate = new Date(f)
+    let date = `${newDate.getFullYear()}/${newDate.getMonth() + 1}/${newDate.getDate()}`;
+    let faDate=moment(date, 'YYYY/MM/DD').locale('fa').format('YYYY')
+    return faDate
+}
+
+function jalaliToMilady(f){
+    let faDate=moment.from(f, 'fa', 'YYYY-MM-DD').locale('en').format('YYYY-MM-DD')
+    return faDate
+}
+
+export { makeDate,makeDateTime,makeTime,makeDateDash,moment as jalaliMomemt,isKabise,jalaliMonth,jalaliYear,jalaliToMilady};

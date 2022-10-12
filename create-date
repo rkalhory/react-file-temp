@@ -1,0 +1,28 @@
+import moment from "jalali-moment";
+
+export function createDate(d){
+    let newDate= d? new Date(d):new Date()
+    let date = `${newDate.getFullYear()}/${newDate.getMonth() + 1}/${newDate.getDate()}`;
+    let faDate=moment(date, 'YYYY/MM/DD').locale('fa').format('YYYY/MM/DD')
+    let pices=faDate.split("/");
+    let m=parseInt(pices[1],10)-1
+
+    const month=[
+        'فروردین',
+        'اردیبهشت',
+        'خرداد',
+        'تیر',
+        'مرداد',
+        'شهریور',
+        'مهر',
+        'آبان',
+        'آذر',
+        'دی',
+        'بهمن',
+        'اسفند',
+    ]
+
+    let finallDate=`${pices[2]} ${month[m]} ${pices[0]}`;
+
+    return finallDate
+}

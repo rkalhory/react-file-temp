@@ -1,0 +1,298 @@
+import {useState, useEffect, useRef, useCallback} from 'react'
+import MainTopTitle from "../../components/utils/mainTopTitle";
+import {Button, Text, Select, DatePicker} from "../../components/utils/field";
+import {Form, message} from "antd";
+import Table from '../../components/utils/table'
+import axios from '../../services/Axios'
+import icon from '../../assets/images/icons/financial.svg'
+import {Helmet} from "react-helmet";
+import {doctorDropdown, getDep} from "../../services/getList";
+import Pagination from "../../components/utils/table/Pagination";
+import {makeDate,makeTime} from "../../utils/persianDate";
+import {clearSession} from "../../utils/clearSession";
+
+const customData = require('../../utils/values.json');
+const statusOptionValue=customData?.statusOptionValuePay
+
+const columns = [
+    {
+        title: 'ردیف',
+        key: 'index',
+        render : (text, record, index) => ((tablePage*tablepageSize)-tablepageSize)+index+1
+    },
+    {
+        title: 'نام بیمار',
+        key: 'PatientFullName'
+    },
+    {
+        title: 'نام پزشک',
+        key: 'DoctorFullName'
+    },
+    {
+        title: 'کلینیک',
+        key: 'DepartmentName'
+    },
+    {
+        title: 'شماره پیگیری',
+        key: 'TrackingNumber',
+    },
+    {
+        title: 'تاریخ و ساعت',
+        key: 'AppointmentDate',
+        render:(field,record)=>(
+            <div className='d-flex align-items-center justify-content-between' style={{width:'150px',margin:'0 auto'}}>
+                <div className='d-flex align-items-center'>
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" className='ml-5'>
+                        <path d="M11.5 0C12.8255 0 13.91 1.03154 13.9947 2.33562L14 2.5V11.5C14 12.8255 12.9685 13.91 11.6644 13.9947L11.5 14H2.5C1.17452 14 0.0899613 12.9685 0.00531769 11.6644L0 11.5V2.5C0 1.17452 1.03154 0.0899613 2.33562 0.00531769L2.5 0H11.5ZM13 4H1V11.5C1 12.2797 1.59489 12.9204 2.35554 12.9931L2.5 13H11.5C12.2797 13 12.9204 12.4051 12.9931 11.6445L13 11.5V4ZM11.5 1H2.5C1.7203 1 1.07955 1.59489 1.00687 2.35554L1 2.5V3H13V2.5C13 1.7203 12.4051 1.07955 11.6445 1.00687L11.5 1Z" fill="#0078D4"/>
+                    </svg>
+                    {makeDate(field)}
+                </div>
+                <div className='d-flex align-items-center'>
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" className='ml-5'>
+                        <path d="M8 0C12.4183 0 16 3.58172 16 8C16 12.4183 12.4183 16 8 16C3.58172 16 0 12.4183 0 8C0 3.58172 3.58172 0 8 0ZM8 1C4.13401 1 1 4.13401 1 8C1 11.866 4.13401 15 8 15C11.866 15 15 11.866 15 8C15 4.13401 11.866 1 8 1ZM7.5 3C7.74546 3 7.94961 3.17688 7.99194 3.41012L8 3.5V8H10.5C10.7761 8 11 8.22386 11 8.5C11 8.74546 10.8231 8.94961 10.5899 8.99194L10.5 9H7.5C7.25454 9 7.05039 8.82312 7.00806 8.58988L7 8.5V3.5C7 3.22386 7.22386 3 7.5 3Z" fill="#0078D4"/>
+                    </svg>
+                    {makeTime(field)}
+                </div>
+            </div>
+        )
+    },
+    {
+        title: 'مبلغ(تومان)',
+        key: 'Price',
+    },
+    {
+        title: 'وضعیت تراکنش',
+        key: 'PaymentStatus',
+        render:(field,record)=> <span className={`status ${(field === 2) ? 'green' : (field === 3)? 'red' : 'blue'}`}>{statusOptionValue[field-1]?.label}</span>
+    },
+];
+
+let tablePage=1
+let tablepageSize=10
+
+function FinancialReports() {
+
+    const [isClear,setIsClear]=useState(false)
+    const [loading,setLoading]=useState(false)
+    const [data,setData]=useState()
+    const [depOption,setdepOption]=useState([])
+    const [doctorList,setDoctorList]=useState([])
+    const [formValues,setFormValues]=useState({
+        doctorId:'',
+        departmentId :'',
+        dateFrom:'',
+        dateTo:'',
+        paymentStatus :'',
+        trackingNumber :'',
+    })
+    const [count,setCount]=useState()
+    const [pageSize,setPageSize]=useState(10)
+    const [page,setPage]=useState(1)
+
+    const formRef=useRef()
+
+    const [form] = Form.useForm();
+
+    function clearFilter(){
+        setIsClear(true)
+        form.submit()
+    }
+
+    const onFinish = useCallback((values) => {
+        const isEmpty = Object.values(values).every(x => (!x || x === ''));
+        if(values.dateFrom&&values.dateTo&&values.dateTo<values.dateFrom){
+            message.error('تاریخ به درستی انتخاب نشده است.')
+        }else if(isEmpty&&!isClear){
+            message.error('چیزی انتخاب نشده است.')
+        }else {
+            let newDateFrom = values.dateFrom?`${values.dateFrom.$y}-${values.dateFrom.$M+1}-${values.dateFrom.$D}`:''
+            let newDateTo = values.dateTo?`${values.dateTo.$y}-${values.dateTo.$M+1}-${values.dateTo.$D}`:''
+            setIsClear(false)
+            setLoading(true)
+            setFormValues({
+                doctorId:!values.doctorId?'':values.doctorId,
+                departmentId:!values.departmentId?'':values.departmentId,
+                dateFrom:newDateFrom,
+                dateTo:newDateTo,
+                trackingNumber:!values.trackingNumber?'':values.trackingNumber,
+                paymentStatus:!values.paymentStatus?'':values.paymentStatus,
+            })
+            setPage(1)
+        }
+    }, [isClear]);
+
+    function getData(){
+        setLoading(true)
+        axios(`---?Page=${
+            page}&PageSize=${pageSize}&PaymentStatus=${parseInt(formValues.paymentStatus,10)||''}&TrackingNumber=${
+            parseInt(formValues.trackingNumber,10)||''}`)
+            .then(res=> {
+                setData(res?.data?.data)
+                setCount(res?.data?.TotalItems)
+            })
+            .catch(err=> {
+                // message.error(err.response?.data?.message)
+                setData([])
+                setPage(1)
+                setCount(0)
+            })
+            .finally(()=>setLoading(false))
+    }
+
+    useEffect(()=>{
+        const dataDep = async () => {
+            const result = await getDep();
+            setdepOption(result)
+        };
+        const dataDoc = async () => {
+            const result = await doctorDropdown();
+            setDoctorList(result)
+        };
+        dataDep()
+        dataDoc()
+        clearSession()
+    },[])
+
+    useEffect(()=>{
+        tablePage=page
+        tablepageSize=pageSize
+        getData()
+    },[page,pageSize,formValues])
+
+    function onChange(value){
+        setPage(value)
+        tablePage=value
+    }
+
+    function onShowSizeChange(current, size){
+        setPageSize(size)
+        tablepageSize=size
+    }
+
+    function datePickerChange(e){
+        if(!e){
+            setIsClear(true)
+            form.submit()
+        }
+    }
+
+
+    return(
+        <div className='page-content'>
+            <Helmet><title>نوبت دهی-گزارشات مالی</title></Helmet>
+            <MainTopTitle
+                title={'گزارشات مالی'}
+                icon={
+                    <img src={icon} alt={icon}/>
+                }
+            />
+            <Form
+                form={form}
+                name="basic"
+                onFinish={onFinish}
+                className='search-form'
+                ref={formRef}
+            >
+                <div className='form-search-row'>
+                    <div className='form-search-col-20 col-s-50'>
+                        <Select
+                            label="نام پزشک"
+                            name="doctorId"
+                            required={false}
+                            showSearch
+                            allowClear
+                            onClear={clearFilter}
+                            placeholder="نام پزشک"
+                            optionFilterProp="children"
+                            filterOption={(input, option) =>
+                                option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                            }
+                            options={doctorList}
+                        />
+                    </div>
+                    <div className='form-search-col-20 col-s-50'>
+                        <Select
+                            label="کلینیک"
+                            name="departmentId"
+                            required={false}
+                            showSearch
+                            allowClear
+                            onClear={clearFilter}
+                            placeholder="کلینیک"
+                            optionFilterProp="children"
+                            filterOption={(input, option) =>
+                                option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                            }
+                            options={depOption}
+                        />
+                    </div>
+                    <div className='form-search-col-20 col-s-100'>
+                        <Text label="شماره پیگیری" name="trackingNumber"/>
+                    </div>
+                    <div className='form-search-col-20 col-s-50'>
+                        <DatePicker
+                            name='dateFrom'
+                            placeholder='از تاریخ'
+                            onChange={e=>datePickerChange(e)}
+                        />
+                    </div>
+                    <div className='form-search-col-20 col-s-50'>
+                        <DatePicker
+                            name='dateTo'
+                            placeholder='تا تاریخ'
+                            onChange={e=>datePickerChange(e)}
+                        />
+                    </div>
+                    <div className='form-search-col-20 col-s-50'>
+                        <Select
+                            label="وضعیت پرداخت"
+                            name="paymentStatus"
+                            required={false}
+                            showSearch
+                            allowClear
+                            onClear={clearFilter}
+                            placeholder="وضعیت پرداخت"
+                            optionFilterProp="children"
+                            filterOption={(input, option) =>
+                                option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                            }
+                            options={statusOptionValue}
+                        />
+                    </div>
+                    <Button
+                        label={
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M10 2.5C14.1421 2.5 17.5 5.85786 17.5 10C17.5 11.7101 16.9276 13.2866 15.964 14.5483L20.7071 19.2929C21.0976 19.6834 21.0976 20.3166 20.7071 20.7071C20.3466 21.0676 19.7794 21.0953 19.3871 20.7903L19.2929 20.7071L14.5483 15.964C13.2866 16.9276 11.7101 17.5 10 17.5C5.85786 17.5 2.5 14.1421 2.5 10C2.5 5.85786 5.85786 2.5 10 2.5ZM10 4.5C6.96243 4.5 4.5 6.96243 4.5 10C4.5 13.0376 6.96243 15.5 10 15.5C13.0376 15.5 15.5 13.0376 15.5 10C15.5 6.96243 13.0376 4.5 10 4.5Z" fill="white"/>
+                            </svg>
+                        }
+                        className='btn-search'
+                        type="primary"
+                        htmlType="submit"
+                        loading={loading}
+                        disabled={loading}
+                    />
+                </div>
+            </Form>
+
+            <Table
+                pagination={false}
+                columns={columns}
+                data={data}
+                loading={loading}
+                rowKey={'Id'}
+            />
+            {count>0&&<Pagination
+                total={count}
+                pageSizeOptions={['5', '10', '15']}
+                showSizeChanger={true}
+                defaultPageSize={pageSize}
+                onShowSizeChange={onShowSizeChange}
+                onChange={onChange}
+                current={page}
+            />}
+
+        </div>
+    )
+}
+
+export default FinancialReports

@@ -1,0 +1,257 @@
+import {useState, useRef, useEffect} from 'react'
+import {Button, Select, Text,InputNumber,TextArea,DatePicker,TimePicker} from "../../../components/utils/field";
+import {Form, message} from "antd";
+import '../../../styles/modal-style.css'
+import {getDep} from "../../../services/getList";
+import moment from "jalali-moment";
+import axios from "../../../services/Axios";
+import dayjs from "dayjs";
+import {jalaliToMilady} from "../../../utils/persianDate";
+
+
+
+const repeatOptionValue=[
+    {value:1, label:'روزانه'},
+    {value:2, label:'هفتگی'},
+    {value:3, label:'ماهانه'},
+]
+
+function AddSchedule({closeModal}) {
+    const [loading,setLoading]=useState(false)
+    const [depOption,setdepOption]=useState([])
+    const [doctorList,setDoctorList]=useState([])
+    let error=false
+
+    const formRef=useRef()
+
+
+
+    const addItem = (values) => {
+        let hourStart=moment(values.timeStart).format("HH:mm")
+        let hourEnd=moment(values.timeEnd).format("HH:mm")
+        setLoading(true)
+        let miladyStart=`${values.dateStart.$y}/${values.dateStart.$M+1}/${values.dateStart.$D}`
+        let miladyEnd=`${values.dateEnd.$y}/${values.dateEnd.$M+1}/${values.dateEnd.$D}`
+        let dtStart= `${miladyStart.replaceAll("/", "-")}T${hourStart}`;
+        let dtEnd = `${miladyEnd.replaceAll("/", "-")}T${hourEnd}`;
+
+        let startCondition=new Date(miladyStart)
+        let endCondition=new Date(miladyEnd)
+
+        if(startCondition>endCondition){
+            message.error('تاریخ به درستی انتخاب نشده است.')
+            error=true
+        }else if(hourStart>hourEnd){
+            message.error('ساعت به درستی انتخاب نشده است.')
+            error=true
+        }else if(parseInt(values.price, 10)<=0){
+            message.error('هزینه را وارد کنید.')
+            error=true
+        }else{
+            axios.post('--',{
+                DoctorId: parseInt(values.doctorId, 10)||'',
+                From: dtStart||'',
+                To: dtEnd||'',
+                TotalPatient: parseInt(values.countPatient, 10)||0,
+                OnlinePatient: parseInt(values.countOnline, 10)||0,
+                Price: parseInt(values.price, 10),
+                DepartmentId: parseInt(values.clinicId, 10)||'',
+                Comment: values.comment||'',
+                RepeatTypeId: parseInt(values.repeatType, 10)||'',
+                RepeatCount: parseInt(values.countRepeat, 10)||'',
+            })
+                .then(res=>console.log(res))
+                .catch(err=> {
+                    if(err)error=true
+                    message.error(err?.response?.data?.message)
+                })
+        }
+        if(!error){
+            message.success('عملیات با موفقیت انجام شد.')
+            closeModal()
+        }
+        setLoading(false)
+    };
+
+    function timePickerBlurStart(time) {
+        formRef.current.setFieldsValue({
+            'timeStart': time,
+        });
+    }
+    function timePickerBlurEnd(time) {
+        formRef.current.setFieldsValue({
+            'timeEnd': time,
+        });
+    }
+
+    useEffect(()=>{
+        const dataDep = async () => {
+            const result = await getDep();
+            setdepOption(result)
+        };
+        const dataDoc = async () => {
+            const getData = await axios('---');
+            const convert = getData?.data?.data?.map((p) => ({
+                value: p.Value,
+                label: p.Text
+            }));
+            setDoctorList(convert)
+        };
+        dataDep()
+        dataDoc()
+    },[])
+
+
+    return(
+        <div className='my-modal'>
+            <div className='close-div' onClick={closeModal}></div>
+            <div className='content d-flex flex-column'>
+                <div className='close-btn' onClick={closeModal}>
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <g clipPath="url(#clip0)">
+                            <path d="M0.2625 0H0.595C2.77375 2.06618 4.85333 4.23704 7 6.33811C9.14229 4.23559 11.2292 2.07635 13.3962 0H13.7492C13.7258 0.189024 13.809 0.276266 14 0.261725V0.594698C11.9262 2.76411 9.75042 4.83901 7.64312 6.97934C9.75187 9.11531 11.9175 11.196 14 13.3567V13.7086C13.809 13.6853 13.7229 13.7682 13.7375 13.9587H13.405C11.2262 11.891 9.14667 9.72164 7 7.62057C4.85771 9.72309 2.77083 11.8823 0.605208 13.9587H0.250833C0.274167 13.7682 0.189583 13.6824 0 13.697V13.3654C2.07229 11.1931 4.24958 9.11967 6.35687 6.97934C4.24813 4.84337 2.0825 2.76266 0 0.601968V0.250093C0.189583 0.273357 0.277083 0.189024 0.2625 0Z" fill="#0082BE"/>
+                        </g>
+                        <defs>
+                            <clipPath id="clip0">
+                                <rect width="14" height="13.9587" fill="white"/>
+                            </clipPath>
+                        </defs>
+                    </svg>
+                </div>
+                <Form
+                    name="addSchedule"
+                    className='modal-form'
+                    onFinish={addItem}
+                    ref={formRef}
+                    initialValues={{
+                        'countRepeat':'',
+                        'countPatient':'' ,
+                        'countOnline':'',
+                        // 'dateStart':typeof addFrom!=='undefined'?dayjs(addDate).calendar('jalali').locale('fa'):'',
+                    }}
+                >
+                    <h2 className='title'>افزودن زمانبندی جدید</h2>
+                    <div className='row-2'>
+                        <div className='col-50 h-65'>
+                            <Select
+                                label="انتخاب پزشک"
+                                name="doctorId"
+                                required={true}
+                                showSearch
+                                allowClear
+                                placeholder="انتخاب پزشک"
+                                optionFilterProp="children"
+                                filterOption={(input, option) =>
+                                    option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                                }
+                                options={doctorList}
+                            />
+                        </div>
+                        <div className='col-50 h-65'>
+                            <Select
+                                label="انتخاب کلینیک"
+                                name="clinicId"
+                                required={true}
+                                showSearch
+                                placeholder="انتخاب کلینیک"
+                                optionFilterProp="children"
+                                filterOption={(input, option) =>
+                                    option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                                }
+                                options={depOption}
+                            />
+                        </div>
+                        <div className='col-50 h-65'>
+                            <DatePicker
+                                name='dateStart'
+                                placeholder='تاریخ شروع'
+                                required={true}
+                            />
+                        </div>
+                        <div className='col-50 h-65'>
+                            <TimePicker
+                                name='timeStart'
+                                onSelect={timePickerBlurStart}
+                                placeholder="ساعت شروع"
+                                allowClear={true}
+                                required={true}
+                                notLabel={true}
+                                />
+                        </div>
+                        <div className='col-50 h-65'>
+                            <DatePicker
+                                name='dateEnd'
+                                placeholder='تاریخ پایان'
+                                required={true}
+                            />
+                        </div>
+                        <div className='col-50 h-65'>
+                            <TimePicker
+                                name='timeEnd'
+                                onSelect={timePickerBlurEnd}
+                                placeholder="ساعت پایان"
+                                allowClear={true}
+                                required={true}
+                                notLabel={true}
+                            />
+                        </div>
+                        <div className='col-50 h-65'>
+                            <Select
+                                label="نوع تکرار"
+                                name="repeatType"
+                                required={true}
+                                showSearch
+                                placeholder="نوع تکرار"
+                                optionFilterProp="children"
+                                filterOption={(input, option) =>
+                                    option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                                }
+                                options={repeatOptionValue}
+                            />
+                        </div>
+                        <div className='col-50 h-65'>
+                            <div className='position-relative'>
+                                <Text label="هزینه" name="price" className='price-input' required={true} notLabel={true}/>
+                                <span className='toman'>تومان</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div className='row-2'>
+                        <div className='col-33'>
+                            <p>تعداد تکرار</p>
+                            <InputNumber name="countRepeat" min={0} className='number-input' errText='این فیلد' required={true}/>
+                        </div>
+                        <div className='col-33'>
+                            <p>تعداد کل بیماران قابل پذیرش</p>
+                            <InputNumber name="countPatient" min={0} className='number-input' errText='این فیلد' required={true}/>
+                        </div>
+                        <div className='col-33'>
+                            <p>تعداد کل بیماران آنلاین</p>
+                            <InputNumber name="countOnline" min={0} className='number-input' errText='این فیلد' required={true}/>
+                        </div>
+                    </div>
+                    <TextArea rows={5} name='comment' placeholder='ثبت نظر برای پزشک' className='mrl-0'/>
+                    <div className='d-flex justify-content-between mt-20'>
+                        <Button
+                            label={'انصراف'}
+                            className='border-btn m-0 w-90'
+                            type="primary"
+                            htmlType="button"
+                            onClick={closeModal}
+                        />
+                        <Button
+                            label={'ذخیره و ثبت اطلاعات'}
+                            className='green-btn m-0 w-90'
+                            type="primary"
+                            htmlType="submit"
+                            loading={loading}
+                            disabled={loading}
+                        />
+                    </div>
+                </Form>
+            </div>
+        </div>
+    )
+}
+
+export default AddSchedule

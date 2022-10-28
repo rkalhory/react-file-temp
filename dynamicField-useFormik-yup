@@ -1,0 +1,156 @@
+import {useState} from 'react'
+import React from 'react'
+import { FieldArray,useFormik,FormikProvider } from 'formik';
+import * as Yup from "yup";
+import { array, number, object, string } from 'yup';
+
+const emptyDonation = { institution: '', percentage: 0 };
+const emptyDonationTouch = { institution: false, percentage: false };
+
+
+export default function Home() {
+
+    const [donationsTouch,setDonationsTouch]=useState([emptyDonationTouch])
+
+    const formik = useFormik({
+        initialValues: {
+            fullName:'',
+            donations: [emptyDonation],
+        },
+        validationSchema: Yup.object().shape({
+            fullName:Yup.string().required('fullname is required!!'),
+            donations: array(
+                object({
+                    institution: string()
+                        .required('Institution name needed')
+                        .min(3, 'Institution name needs to be at least 3 characters')
+                        .max(
+                            10,
+                            'Institution name needs to be at most 10 characters'
+                        ),
+                    percentage: number()
+                        .required('Percentage needed')
+                        .min(1, 'Percentage needs to be at least 1%')
+                        .max(100, 'Percentage can be at most 100%'),
+                })
+            )
+        }),
+        onSubmit: values => {
+            console.log('my values', values);
+        },
+    });
+
+    return (
+        <>
+            <FormikProvider value={formik}>
+                <form onSubmit={formik.handleSubmit} >
+                    <input
+                        name={'fullName'}
+                        placeholder={'fullName'}
+                        type='text'
+                        onChange={formik.handleChange}
+                        onBlur={formik.handleBlur}
+                        value={formik.values.fullName}
+                    />
+                    {formik.errors.fullName&&formik.touched.fullName&&<span style={{color:'red'}}>{formik.errors.fullName}</span>}
+                    <hr/>
+                    <FieldArray
+                        name="donations"
+                        render={({ push, remove }) => (
+                            <React.Fragment>
+                                {formik?.values?.donations?.map((donations, index) => (
+                                    <div key={index} style={{display:'flex'}}>
+                                        <div>
+                                            <input
+                                                name={`donations.${index}.institution`}
+                                                placeholder={'institution'}
+                                                type='text'
+                                                onChange={formik.handleChange}
+                                                onBlur={()=>{
+
+                                                    let temp=donationsTouch.map((item,i)=>(
+                                                        i===index?{...item,institution:true}:item
+                                                    ))
+                                                    setDonationsTouch(temp)
+                                                }}
+                                                value={formik.values.donations[index].institution}
+                                            />
+
+
+                                            {Array.isArray(formik.errors.donations)&&Array.isArray(donationsTouch)?
+                                            formik.errors.donations[index]?.institution&& donationsTouch[index]?.institution&&
+                                            <div style={{color:'red'}}>{formik.errors.donations[index]?.institution}</div>:''}
+                                        </div>
+                                        <div>
+                                            <input
+                                                name={`donations[${index}].percentage`}
+                                                placeholder={'percentage'}
+                                                type="number"
+                                                onChange={formik.handleChange}
+                                                onBlur={()=>{
+                                                    let temp=donationsTouch.map((item,i)=>(
+                                                        i===index?{...item,percentage:true}:item
+                                                    ))
+                                                    setDonationsTouch(temp)
+                                                }}
+                                                value={formik.values.donations[index].percentage}
+                                            />
+
+                                            {Array.isArray(formik.errors.donations)&&Array.isArray(donationsTouch)?
+                                                formik.errors.donations[index]?.percentage&& donationsTouch[index]?.percentage&&
+                                                <div style={{color:'red'}}>{formik.errors.donations[index]?.percentage}</div>:''}
+                                        </div>
+
+
+                                        <button
+                                            onClick={() => {
+                                                remove(index)
+                                                let temp=donationsTouch.filter((_, i) => i !== index)
+                                                setDonationsTouch(temp)
+                                            }}
+                                        >
+                                            Delete
+                                        </button>
+                                    </div>
+                                ))}
+
+                                <button
+                                    onClick={() => {
+                                        push(emptyDonation)
+                                        setDonationsTouch(oldArray => [...oldArray,emptyDonationTouch] )
+                                    }}
+                                >
+                                    Add Donation
+                                </button>
+                            </React.Fragment>
+
+                        )}>
+                    </FieldArray>
+                    <div style={{marginTop:'25px'}}>
+
+                        <button
+                            onClick={()=>{
+                                let temp=donationsTouch.map((item,i)=>(
+                                    { institution: true, percentage: true }
+                                ))
+                                setDonationsTouch(temp)
+                            }}
+                            type="submit"
+                            color="primary"
+                        >
+                            Submit
+                        </button>
+                    </div>
+
+
+
+                </form>
+                <hr/>
+                values:<pre>{JSON.stringify(formik.values, null, 4)}</pre>
+                errors:<pre>{JSON.stringify(formik.errors, null, 4)}</pre>
+                touched:<pre>{JSON.stringify(formik.touched, null, 4)}</pre>
+
+            </FormikProvider>
+        </>
+    );
+}
